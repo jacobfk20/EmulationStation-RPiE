@@ -1,47 +1,31 @@
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
+# Compiled Object files
+*.slo
+*.lo
+*.o
 
-# Folder config file
-Desktop.ini
+# Compiled Dynamic libraries
+*.so
 
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+# Compiled Static libraries
+*.lai
+*.la
+*.a
 
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
+# Dependency makefiles
+*.d
 
-# Windows shortcuts
-*.lnk
+# Compiled executable
+emulationstation
 
-# =========================
-# Operating System Files
-# =========================
+# build directory
+build
+Debug
+Release
+MinSizeRel
+RelWithDebInfo
 
-# OSX
-# =========================
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Thumbnails
-._*
-
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+# CMake
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
