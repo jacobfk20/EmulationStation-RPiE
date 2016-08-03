@@ -8,6 +8,9 @@ This version of EmulationStation is targeted mostly for ease of access from the 
 -Storage view
 -Several other smaller UI changes.
 
+** A Quick View of What's changed: **
+http://imgur.com/a/Kdoif
+
 
 Original Project website: http://emulationstation.org
 
