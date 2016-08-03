@@ -6,10 +6,13 @@
 #include <iomanip>
 #include "Renderer.h"
 #include "views/ViewController.h"
+#include "guis/GuiSetupController.h"
 #include "SystemData.h"
 #include <boost/filesystem.hpp>
 #include "guis/GuiDetectDevice.h"
 #include "guis/GuiMsgBox.h"
+#include "components/MenuComponent.h"
+#include "components/TextComponent.h"
 #include "AudioManager.h"
 #include "platform.h"
 #include "Log.h"
@@ -274,6 +277,7 @@ int main(int argc, char* argv[])
 			window.pushGui(new GuiDetectDevice(&window, true, [] { ViewController::get()->goToStart(); }));
 		}
 	}
+
 
 	//generate joystick events since we're done loading
 	SDL_JoystickEventState(SDL_ENABLE);

@@ -2,6 +2,7 @@
 
 #include "GuiComponent.h"
 #include "components/MenuComponent.h"
+#include "components/NetworkInfoComponent.h"
 #include <functional>
 
 class GuiMenu : public GuiComponent
@@ -10,6 +11,7 @@ public:
 	GuiMenu(Window* window);
 
 	bool input(InputConfig* config, Input input) override;
+	void update(int deltatime) override;
 	void onSizeChanged() override;
 	std::vector<HelpPrompt> getHelpPrompts() override;
 
@@ -18,4 +20,6 @@ private:
 
 	MenuComponent mMenu;
 	TextComponent mVersion;
+
+	NetworkInfoComponent mNetInfo;
 };

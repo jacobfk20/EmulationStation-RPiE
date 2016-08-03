@@ -13,12 +13,20 @@
 #include "Settings.h"
 #include "FileSorts.h"
 
+// -- Update 3/19/2016 - Jacob K. --
+// -- Added systemEnabled flag so systems can easily be hidden in menu.
+// -- Update 6/26/2016 - Jacob K. --
+// -- Added System ViewMode.  Allows user to pick which view mode the system is in.
+// -- Update 7/21/2016 - Jacob K. --
+// -- Added GameGridModSize.
+
 std::vector<SystemData*> SystemData::sSystemVector;
 
 namespace fs = boost::filesystem;
 
 SystemData::SystemData(const std::string& name, const std::string& fullName, const std::string& startPath, const std::vector<std::string>& extensions, 
-	const std::string& command, const std::vector<PlatformIds::PlatformId>& platformIds, const std::string& themeFolder)
+	const std::string& command, const std::vector<PlatformIds::PlatformId>& platformIds, const std::string& themeFolder, std::string& rawTheme,
+	bool directLaunch, bool systemEnabled, std::string viewMode, int modSize)
 {
 	mName = name;
 	mFullName = fullName;
@@ -35,6 +43,16 @@ SystemData::SystemData(const std::string& name, const std::string& fullName, con
 	mLaunchCommand = command;
 	mPlatformIds = platformIds;
 	mThemeFolder = themeFolder;
+
+	mRawTheme = rawTheme;
+
+	mDirectLaunch = directLaunch;
+
+	mSystemEnabled = systemEnabled;
+
+	mViewMode = viewMode;
+
+	mGridModSize = modSize;
 
 	mRootFolder = new FileData(FOLDER, mStartPath, this);
 	mRootFolder->metadata.set("name", mFullName);
@@ -106,7 +124,12 @@ std::string escapePath(const boost::filesystem::path& path)
 
 void SystemData::launchGame(Window* window, FileData* game)
 {
-	LOG(LogInfo) << "Attempting to launch game...";
+	if ( game )
+	{
+		LOG(LogInfo) << "Attempting to launch game...";
+	}else{
+		LOG(LogInfo) << "Attempting to launch command...";
+	}
 
 	AudioManager::getInstance()->deinit();
 	VolumeControl::getInstance()->deinit();
@@ -114,18 +137,19 @@ void SystemData::launchGame(Window* window, FileData* game)
 
 	std::string command = mLaunchCommand;
 
-	const std::string rom = escapePath(game->getPath());
-	const std::string basename = game->getPath().stem().string();
-	const std::string rom_raw = fs::path(game->getPath()).make_preferred().string();
+	if ( game )
+	{
+		const std::string rom = escapePath(game->getPath());
+		const std::string basename = game->getPath().stem().string();
+		const std::string rom_raw = fs::path(game->getPath()).make_preferred().string();
 
-	command = strreplace(command, "%ROM%", rom);
-	command = strreplace(command, "%BASENAME%", basename);
-	command = strreplace(command, "%ROM_RAW%", rom_raw);
+		command = strreplace(command, "%ROM%", rom);
+		command = strreplace(command, "%BASENAME%", basename);
+		command = strreplace(command, "%ROM_RAW%", rom_raw);
+	}
 
 	LOG(LogInfo) << "	" << command;
-	std::cout << "==============================================\n";
 	int exitCode = runSystemCommand(command);
-	std::cout << "==============================================\n";
 
 	if(exitCode != 0)
 	{
@@ -137,17 +161,26 @@ void SystemData::launchGame(Window* window, FileData* game)
 	AudioManager::getInstance()->init();
 	window->normalizeNextUpdate();
 
-	//update number of times the game has been launched
-	int timesPlayed = game->metadata.getInt("playcount") + 1;
-	game->metadata.set("playcount", std::to_string(static_cast<long long>(timesPlayed)));
+	if ( game )
+	{
+		//update number of times the game has been launched
+		int timesPlayed = game->metadata.getInt("playcount") + 1;
+		game->metadata.set("playcount", std::to_string(static_cast<long long>(timesPlayed)));
 
-	//update last played time
-	boost::posix_time::ptime time = boost::posix_time::second_clock::universal_time();
-	game->metadata.setTime("lastplayed", time);
+		//update last played time
+		boost::posix_time::ptime time = boost::posix_time::second_clock::universal_time();
+		game->metadata.setTime("lastplayed", time);
+	}
 }
 
 void SystemData::populateFolder(FileData* folder)
 {
+	if (mDirectLaunch)
+	{
+		LOG(LogInfo) << "System " << mName << " is a direct launch item, not building game lists.";
+		return;
+	}
+
 	const fs::path& folderPath = folder->getPath();
 	if(!fs::is_directory(folderPath))
 	{
@@ -225,6 +258,100 @@ std::vector<std::string> readList(const std::string& str, const char* delims = "
 	return ret;
 }
 
+/// Dump altered file to home/.emulationstation
+int SystemData::saveConfig() {
+	// Check and see if there is a config file saved in writeable location...
+	std::string path = getConfigPath(true);
+
+	// If not, try again with /etc/
+	if (!fs::exists(path)) {
+		LOG(LogInfo) << "Trying to load es_systems.cfg from /etc/ instead of home.";
+		path = getConfigPath(false);
+
+		if (!fs::exists(path)) {
+			LOG(LogInfo) << "There is no valid location of es_systems.cfg.  --Should be in /etc/emulationstation";
+			return -2;
+		}
+	}
+
+	// Load in config file.
+	pugi::xml_document doc;
+	pugi::xml_parse_result res = doc.load_file(path.c_str());
+	pugi::xml_node node;
+
+	// Keep track if anything changed and reload
+	bool bGamelistReload = false;
+	bool bSystemlistReload = false;
+
+	// Loop through all systems in system <vector>
+	bool bFound = false;
+	for (int i = 0; i < sSystemVector.size(); i++) {
+		SystemData* tSystem = sSystemVector[i];
+
+
+
+		// find this system's node in the config file.
+		for (node = doc.child("systemList").first_child(); node; node = node.next_sibling()) {
+			// First check if important things are changing (only check if you want these updated asap)
+			if (tSystem->getSystemViewMode() != node.child_value("viewmode")) bGamelistReload = true;
+			// Anoying job to compare bool and strings
+			std::string sTempEnabled = "false";
+			if (tSystem->getSystemEnabled()) sTempEnabled = "true";
+			if (sTempEnabled != node.child_value("enabled")) bSystemlistReload = true;
+
+			std::string sName = node.child_value("name");
+			if (sName == tSystem->getName()) {
+				// Append saveable values
+				pugi::xml_node tnode;
+				node.child("fullname").text().set(tSystem->getFullName().c_str());
+				
+				// Check if viewmode is in the cfg tree:
+				if (node.child_value("viewmode") == "") node.append_child("viewmode");
+				node.child("viewmode").text().set(tSystem->getSystemViewMode().c_str());
+					
+				std::string bEnabled = "false";
+				if (tSystem->getSystemEnabled()) bEnabled = "true";
+				// Check if enabledis in the cfg tree:
+				if (node.child_value("enabled") == "") node.append_child("enabled");
+				node.child("enabled").text().set(bEnabled.c_str());
+
+				node.child("theme").text().set(tSystem->getRawTheme().c_str());
+
+				// Set grid size
+				if (node.child_value("gridsize") == "") node.append_child("gridsize");
+				node.child("gridsize").text().set(tSystem->getGridModSize());
+
+				bFound = true;
+
+				break;
+			}
+
+		}
+
+		if (bFound) continue;
+
+		// if this system couldn't be found
+		LOG(LogError) << "Couldn't find system: " << tSystem->getName() << " In es_systems.cfg file.  That's bad.";
+	}
+
+	// Attempt to save this file to writeable area
+	path = getConfigPath(true);		// Make sure path is set to /.emulationstation
+	
+	try {
+		doc.save_file(path.c_str());
+	}
+	catch (int e) {
+		LOG(LogError) << "Could not create new es_systems.cfg in .emulationstation.  Discarding config.";
+		return -1;
+	}
+
+	// if anything changed, reload.
+	if (bGamelistReload) return 1;
+	if (bSystemlistReload) return 2;
+
+	return 0;
+}
+
 //creates systems from information located in a config file
 bool SystemData::loadConfig()
 {
@@ -262,12 +389,32 @@ bool SystemData::loadConfig()
 
 	for(pugi::xml_node system = systemList.child("system"); system; system = system.next_sibling("system"))
 	{
-		std::string name, fullname, path, cmd, themeFolder;
+		std::string name, fullname, path, cmd, themeFolder, viewMode, rawtheme;
+		bool directLaunch, systemEnabled;
 		PlatformIds::PlatformId platformId = PlatformIds::PLATFORM_UNKNOWN;
+		int modsize = 1;
 
 		name = system.child("name").text().get();
 		fullname = system.child("fullname").text().get();
 		path = system.child("path").text().get();
+		rawtheme = system.child("theme").text().get();
+		directLaunch = ( strcmp( system.child("directlaunch").text().get(), "true" ) == 0);
+		if (system.child("enabled").text().get() != "") {
+			systemEnabled = (strcmp(system.child("enabled").text().get(), "true") == 0);			// If this system is disabled, set flag to not show it -jfk
+		}
+		else {
+			// set enabled to true so save will write it
+			systemEnabled = true;
+		}
+		
+
+		viewMode = system.child("viewmode").text().get();		// Gets the system's view mode.  (ignores if not there.)
+		if (viewMode == "") {
+			viewMode = "DEFAULT";
+		}
+
+		std::string tempmod = system.child("gridsize").text().get();
+		if (tempmod != "") modsize = std::stoi(tempmod);
 
 		// convert extensions list from a string into a vector of strings
 		std::vector<std::string> extensions = readList(system.child("extension").text().get());
@@ -301,19 +448,29 @@ bool SystemData::loadConfig()
 		// theme folder
 		themeFolder = system.child("theme").text().as_string(name.c_str());
 
-		//validate
-		if(name.empty() || path.empty() || extensions.empty() || cmd.empty())
+		//validate game system
+		if( (name.empty() || path.empty() || extensions.empty() || cmd.empty() ) && directLaunch == false )
 		{
 			LOG(LogError) << "System \"" << name << "\" is missing name, path, extension, or command!";
 			continue;
 		}
+		
+		//validate direct launch item
+		if( (name.empty() || cmd.empty() ) && directLaunch == true )
+		{
+			LOG(LogError) << "Direct Launch item \"" << name << "\" is missing name or command!";
+			continue;
+		}
 
-		//convert path to generic directory seperators
-		boost::filesystem::path genericPath(path);
-		path = genericPath.generic_string();
+		if (!directLaunch)
+		{
+			//convert path to generic directory seperators
+			boost::filesystem::path genericPath(path);
+			path = genericPath.generic_string();
+		}
 
-		SystemData* newSys = new SystemData(name, fullname, path, extensions, cmd, platformIds, themeFolder);
-		if(newSys->getRootFolder()->getChildren().size() == 0)
+		SystemData* newSys = new SystemData(name, fullname, path, extensions, cmd, platformIds, themeFolder, rawtheme, directLaunch, systemEnabled, viewMode, modsize);
+		if(newSys->getRootFolder()->getChildren().size() == 0 && !directLaunch)
 		{
 			LOG(LogWarning) << "System \"" << name << "\" has no games! Ignoring it.";
 			delete newSys;
@@ -363,6 +520,10 @@ void SystemData::writeExampleConfig(const std::string& path)
 			"		<!-- The theme to load from the current theme set.  See THEMES.md for more information.\n"
 			"		This tag is optional. If not set, it will default to the value of <name>. -->\n"
 			"		<theme>nes</theme>\n"
+			"\n"
+			"		<!-- Specifies if the item is a direct launch item and won't show it's game list but instead\n"
+			"		will launch the command given. If set to true, every tag except for name and command is optional -->\n"
+			"		<directlaunch>false</directlaunch>\n"
 			"	</system>\n"
 			"</systemList>\n";
 
@@ -420,6 +581,26 @@ std::string SystemData::getThemePath() const
 	// not in game folder, try theme sets
 	return ThemeData::getThemeFromCurrentSet(mThemeFolder).generic_string();
 }
+
+void SystemData::setFullName(std::string nName) {
+	mFullName = nName;
+}
+
+/// Sets the current system object to show or not.
+bool SystemData::setSystemEnabled(bool bEnabled) {
+	mSystemEnabled = bEnabled;
+}
+
+/// Set modifier size for GameGrid
+void SystemData::setGridModSize(int s) {
+	mGridModSize = s;
+}
+
+/// Sets the current system view mode
+void SystemData::setSystemViewMode(std::string newViewMode) {
+	mViewMode = newViewMode;
+}
+
 
 bool SystemData::hasGamelist() const
 {

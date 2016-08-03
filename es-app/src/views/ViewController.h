@@ -1,6 +1,7 @@
 #pragma once
 
 #include "views/gamelist/IGameListView.h"
+#include "views/SetupGamepad.h"
 #include "views/SystemView.h"
 
 class SystemData;
@@ -29,6 +30,7 @@ public:
 	void goToPrevGameList();
 	void goToGameList(SystemData* system);
 	void goToSystemView(SystemData* system);
+	void goToSetupGamepad();
 	void goToStart();
 
 	void onFileChanged(FileData* file, FileChangeType change);
@@ -46,7 +48,7 @@ public:
 		NOTHING,
 		START_SCREEN,
 		SYSTEM_SELECT,
-		GAME_LIST
+		GAME_LIST,
 	};
 
 	struct State
@@ -78,6 +80,7 @@ private:
 	std::shared_ptr<GuiComponent> mCurrentView;
 	std::map< SystemData*, std::shared_ptr<IGameListView> > mGameListViews;
 	std::shared_ptr<SystemView> mSystemListView;
+	std::shared_ptr<SetupGamepad> mSetupGamepad;
 	
 	Eigen::Affine3f mCamera;
 	float mFadeOpacity;

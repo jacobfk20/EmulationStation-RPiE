@@ -42,6 +42,7 @@ public:
 
 	void resetCursor();
 	bool cursorValid();
+	Eigen::Vector2i getCursor();		// returns the position of the cursor.
 
 	float getColWidth(int col);
 	float getRowHeight(int row);

@@ -123,6 +123,7 @@ void Settings::loadFile()
 	{
 		LOG(LogError) << "Could not parse Settings file!\n   " << result.description();
 		return;
+		
 	}
 
 	for(pugi::xml_node node = doc.child("bool"); node; node = node.next_sibling("bool"))

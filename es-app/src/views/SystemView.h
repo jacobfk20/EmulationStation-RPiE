@@ -6,6 +6,7 @@
 #include "components/ScrollableContainer.h"
 #include "components/IList.h"
 #include "resources/TextureResource.h"
+#include "components/InfoStripComponent.h"
 
 class SystemData;
 class AnimatedImageComponent;

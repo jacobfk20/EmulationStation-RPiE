@@ -1,6 +1,7 @@
 #include "views/gamelist/ISimpleGameListView.h"
 #include "ThemeData.h"
 #include "Window.h"
+#include "Log.h"
 #include "views/ViewController.h"
 #include "Sound.h"
 #include "Settings.h"
@@ -86,7 +87,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			}
 
 			return true;
-		}else if(config->isMappedTo("right", input))
+		}else if(config->isMappedTo("right", input) || config->isMappedTo("righttop", input))
 		{
 			if(Settings::getInstance()->getBool("QuickSystemSelect"))
 			{
@@ -94,7 +95,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 				ViewController::get()->goToNextGameList();
 				return true;
 			}
-		}else if(config->isMappedTo("left", input))
+		}else if(config->isMappedTo("left", input) || config->isMappedTo("lefttop", input))
 		{
 			if(Settings::getInstance()->getBool("QuickSystemSelect"))
 			{

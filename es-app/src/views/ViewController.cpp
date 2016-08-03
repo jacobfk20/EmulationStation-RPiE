@@ -6,6 +6,7 @@
 #include "views/gamelist/BasicGameListView.h"
 #include "views/gamelist/DetailedGameListView.h"
 #include "views/gamelist/GridGameListView.h"
+#include "views/gamelist/ISimpleGameListView.h"
 #include "guis/GuiMenu.h"
 #include "guis/GuiMsgBox.h"
 #include "animations/LaunchAnimation.h"
@@ -72,7 +73,15 @@ void ViewController::goToNextGameList()
 	assert(mState.viewing == GAME_LIST);
 	SystemData* system = getState().getSystem();
 	assert(system);
-	goToGameList(system->getNext());
+	
+	// skip systems that don't have a game list, this will always end since it is called
+	// from a system with a game list and the iterator is cyclic
+	do
+	{
+		system = system->getNext();
+	} while ( system->getDirectLaunch() );
+	
+	goToGameList(system);
 }
 
 void ViewController::goToPrevGameList()
@@ -80,7 +89,15 @@ void ViewController::goToPrevGameList()
 	assert(mState.viewing == GAME_LIST);
 	SystemData* system = getState().getSystem();
 	assert(system);
-	goToGameList(system->getPrev());
+	
+	// skip systems that don't have a game list, this will always end since it is called
+	// from a system with a game list and the iterator is cyclic
+	do
+	{
+		system = system->getPrev();
+	} while ( system->getDirectLaunch() );
+	
+	goToGameList(system);
 }
 
 void ViewController::goToGameList(SystemData* system)
@@ -98,9 +115,23 @@ void ViewController::goToGameList(SystemData* system)
 
 	mState.viewing = GAME_LIST;
 	mState.system = system;
+	
+	// Run the old view's onFocusLost before it gets replaced
+	mCurrentView->onFocusLost();
 
 	mCurrentView = getGameListView(system);
 	playViewTransition();
+
+	// Run the new view's onFocusGained
+	mCurrentView->onFocusGained();
+}
+
+
+
+void ViewController::goToSetupGamepad() {
+	mSetupGamepad = std::shared_ptr<SetupGamepad>(new SetupGamepad(mWindow));
+	addChild(mSetupGamepad.get());
+	mCurrentView = mSetupGamepad;
 }
 
 void ViewController::playViewTransition()
@@ -198,6 +229,7 @@ void ViewController::launch(FileData* game, Eigen::Vector3f center)
 	}
 }
 
+
 std::shared_ptr<IGameListView> ViewController::getGameListView(SystemData* system)
 {
 	//if we already made one, return that one
@@ -219,14 +251,28 @@ std::shared_ptr<IGameListView> ViewController::getGameListView(SystemData* syste
 			break;
 		}
 	}
-		
-	if(detailed)
-		view = std::shared_ptr<IGameListView>(new DetailedGameListView(mWindow, system->getRootFolder()));
-	else
+	
+	// Set what view to do based on what the system config wants -- jfk
+	std::string sViewMode = system->getSystemViewMode();
+	if (sViewMode == "DEFAULT")
+	{
+		// Original Default mode, let ES decide what to choose from (besides grid view.)
+		if (detailed)
+			view = std::shared_ptr<IGameListView>(new DetailedGameListView(mWindow, system->getRootFolder()));
+		else
+			view = std::shared_ptr<IGameListView>(new BasicGameListView(mWindow, system->getRootFolder()));
+	}
+	
+	// For grid view.  (originally was commented out and unfinished.)
+	if (sViewMode == "GRID VIEW")
+		view = std::shared_ptr<IGameListView>(new GridGameListView(mWindow, system));
+
+	// For Simple view.
+	if (sViewMode == "SIMPLE VIEW")
 		view = std::shared_ptr<IGameListView>(new BasicGameListView(mWindow, system->getRootFolder()));
-		
-	// uncomment for experimental "image grid" view
-	//view = std::shared_ptr<IGameListView>(new GridGameListView(mWindow, system->getRootFolder()));
+
+	if (sViewMode == "DETAILED VIEW")
+		view = std::shared_ptr<IGameListView>(new DetailedGameListView(mWindow, system->getRootFolder()));
 
 	view->setTheme(system->getTheme());
 
@@ -266,6 +312,7 @@ bool ViewController::input(InputConfig* config, Input input)
 		return true;
 	}
 
+
 	if(mCurrentView)
 		return mCurrentView->input(config, input);
 
@@ -292,6 +339,7 @@ void ViewController::render(const Eigen::Affine3f& parentTrans)
 
 	// draw systemview
 	getSystemListView()->render(trans);
+	//mSetupGamepad->render(trans);
 	
 	// draw gamelists
 	for(auto it = mGameListViews.begin(); it != mGameListViews.end(); it++)

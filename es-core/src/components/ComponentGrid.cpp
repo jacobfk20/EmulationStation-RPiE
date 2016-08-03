@@ -419,6 +419,11 @@ void ComponentGrid::setCursorTo(const std::shared_ptr<GuiComponent>& comp)
 	assert(false);
 }
 
+// Return the position of the cursor.
+Eigen::Vector2i ComponentGrid::getCursor() {
+	return mCursor;
+}
+
 std::vector<HelpPrompt> ComponentGrid::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;

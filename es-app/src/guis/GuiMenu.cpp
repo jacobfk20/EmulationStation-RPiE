@@ -1,5 +1,7 @@
 #include "EmulationStation.h"
 #include "guis/GuiMenu.h"
+#include "guis/GuiWifi.h"
+#include "guis/GuiSystemSettings.h"
 #include "Window.h"
 #include "Sound.h"
 #include "Log.h"
@@ -10,17 +12,20 @@
 #include "guis/GuiDetectDevice.h"
 #include "views/ViewController.h"
 
+#include <Eigen/Dense>
+
 #include "components/ButtonComponent.h"
 #include "components/SwitchComponent.h"
 #include "components/SliderComponent.h"
 #include "components/TextComponent.h"
 #include "components/OptionListComponent.h"
 #include "components/MenuComponent.h"
+#include "components/ProgressBarComponent.h"
 #include "VolumeControl.h"
 #include "scrapers/GamesDBScraper.h"
 #include "scrapers/TheArchiveScraper.h"
 
-GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MENU"), mVersion(window)
+GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MENU"), mVersion(window), mNetInfo(window)
 {
 	// MAIN MENU
 
@@ -28,6 +33,8 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 	// SOUND SETTINGS >
 	// UI SETTINGS >
 	// CONFIGURE INPUT >
+	// NETWORK SETTINGS >
+	// SYSTEM >
 	// QUIT >
 
 	// [version]
@@ -88,29 +95,35 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 
 	addEntry("UI SETTINGS", 0x777777FF, true,
 		[this] {
-			auto s = new GuiSettings(mWindow, "UI SETTINGS");
+		auto s = new GuiSettings(mWindow, "UI SETTINGS");
 
-			// screensaver time
-			auto screensaver_time = std::make_shared<SliderComponent>(mWindow, 0.f, 30.f, 1.f, "m");
-			screensaver_time->setValue((float)(Settings::getInstance()->getInt("ScreenSaverTime") / (1000 * 60)));
-			s->addWithLabel("SCREENSAVER AFTER", screensaver_time);
-			s->addSaveFunc([screensaver_time] { Settings::getInstance()->setInt("ScreenSaverTime", (int)round(screensaver_time->getValue()) * (1000 * 60)); });
+		// screensaver time
+		auto screensaver_time = std::make_shared<SliderComponent>(mWindow, 0.f, 30.f, 1.f, "m");
+		screensaver_time->setValue((float)(Settings::getInstance()->getInt("ScreenSaverTime") / (1000 * 60)));
+		s->addWithLabel("SCREENSAVER AFTER", screensaver_time);
+		s->addSaveFunc([screensaver_time] { Settings::getInstance()->setInt("ScreenSaverTime", (int)round(screensaver_time->getValue()) * (1000 * 60)); });
 
-			// screensaver behavior
-			auto screensaver_behavior = std::make_shared< OptionListComponent<std::string> >(mWindow, "TRANSITION STYLE", false);
-			std::vector<std::string> screensavers;
-			screensavers.push_back("dim");
-			screensavers.push_back("black");
-			for(auto it = screensavers.begin(); it != screensavers.end(); it++)
-				screensaver_behavior->add(*it, *it, Settings::getInstance()->getString("ScreenSaverBehavior") == *it);
-			s->addWithLabel("SCREENSAVER BEHAVIOR", screensaver_behavior);
-			s->addSaveFunc([screensaver_behavior] { Settings::getInstance()->setString("ScreenSaverBehavior", screensaver_behavior->getSelected()); });
+		// screensaver behavior
+		auto screensaver_behavior = std::make_shared< OptionListComponent<std::string> >(mWindow, "TRANSITION STYLE", false);
+		std::vector<std::string> screensavers;
+		screensavers.push_back("dim");
+		screensavers.push_back("black");
+		for (auto it = screensavers.begin(); it != screensavers.end(); it++)
+			screensaver_behavior->add(*it, *it, Settings::getInstance()->getString("ScreenSaverBehavior") == *it);
+		s->addWithLabel("SCREENSAVER BEHAVIOR", screensaver_behavior);
+		s->addSaveFunc([screensaver_behavior] { Settings::getInstance()->setString("ScreenSaverBehavior", screensaver_behavior->getSelected()); });
 
-			// framerate
-			auto framerate = std::make_shared<SwitchComponent>(mWindow);
-			framerate->setState(Settings::getInstance()->getBool("DrawFramerate"));
-			s->addWithLabel("SHOW FRAMERATE", framerate);
-			s->addSaveFunc([framerate] { Settings::getInstance()->setBool("DrawFramerate", framerate->getState()); });
+		// framerate
+		auto framerate = std::make_shared<SwitchComponent>(mWindow);
+		framerate->setState(Settings::getInstance()->getBool("DrawFramerate"));
+		s->addWithLabel("SHOW FRAMERATE", framerate);
+		s->addSaveFunc([framerate] { Settings::getInstance()->setBool("DrawFramerate", framerate->getState()); });
+
+		// Network Icons
+		auto show_network = std::make_shared<SwitchComponent>(mWindow);
+		show_network->setState(Settings::getInstance()->getBool("ShowNetwork"));
+		s->addWithLabel("SHOW NETWORK ICONS", show_network);
+		s->addSaveFunc([show_network] { Settings::getInstance()->setBool("ShowNetwork", show_network->getState()); });
 
 			// show help
 			auto show_help = std::make_shared<SwitchComponent>(mWindow);
@@ -170,6 +183,19 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 			mWindow->pushGui(new GuiDetectDevice(mWindow, false, nullptr));
 	});
 
+
+	addEntry("SYSTEM", 0x777777FF, true, [this] {
+		mWindow->pushGui(new GuiSystemSettings(mWindow));
+	});
+
+
+	//addEntry("SYNC NEW 360 CONTROLLER", 0x777777FF, true,
+	//	[this] {
+	//	system("python /home/pi/360rf/sync.py");
+	//	mWindow->pushGui(new GuiMsgBox(mWindow, "Sync started, turn on controller and hit the sync button.", "Ok", nullptr));
+	//});
+
+
 	addEntry("QUIT", 0x777777FF, true, 
 		[this] {
 			auto s = new GuiSettings(mWindow, "QUIT");
@@ -178,9 +204,20 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 
 			ComponentListRow row;
 			row.makeAcceptInputHandler([window] {
+				window->pushGui(new GuiMsgBox(window, "REALLY RESTART?", "YES",
+				[] {
+					if(quitES("/tmp/es-restart") != 0)
+						LOG(LogWarning) << "Restart terminated with non-zero result!";
+				}, "NO", nullptr));
+			});
+			row.addElement(std::make_shared<TextComponent>(window, "RESTART EMULATIONSTATION", Font::get(FONT_SIZE_MEDIUM), 0x777777FF), true);
+			s->addRow(row);
+
+			row.elements.clear();
+			row.makeAcceptInputHandler([window] {
 				window->pushGui(new GuiMsgBox(window, "REALLY RESTART?", "YES", 
 				[] { 
-					if(runRestartCommand() != 0)
+					if(quitES("/tmp/es-sysrestart") != 0)
 						LOG(LogWarning) << "Restart terminated with non-zero result!";
 				}, "NO", nullptr));
 			});
@@ -191,8 +228,10 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 			row.makeAcceptInputHandler([window] {
 				window->pushGui(new GuiMsgBox(window, "REALLY SHUTDOWN?", "YES", 
 				[] { 
-					if(runShutdownCommand() != 0)
+					if (quitES("/tmp/es-shutdown") != 0)
+					{
 						LOG(LogWarning) << "Shutdown terminated with non-zero result!";
+					}
 				}, "NO", nullptr));
 			});
 			row.addElement(std::make_shared<TextComponent>(window, "SHUTDOWN SYSTEM", Font::get(FONT_SIZE_MEDIUM), 0x777777FF), true);
@@ -217,12 +256,14 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 	});
 
 	mVersion.setFont(Font::get(FONT_SIZE_SMALL));
-	mVersion.setColor(0xC6C6C6FF);
+	mVersion.setColor(0xAAAAFFFF);
 	mVersion.setText("EMULATIONSTATION V" + strToUpper(PROGRAM_VERSION_STRING));
 	mVersion.setAlignment(ALIGN_CENTER);
 
 	addChild(&mMenu);
 	addChild(&mVersion);
+	addChild(&mNetInfo);
+
 
 	setSize(mMenu.getSize());
 	setPosition((Renderer::getScreenWidth() - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f);
@@ -265,6 +306,10 @@ bool GuiMenu::input(InputConfig* config, Input input)
 	}
 
 	return false;
+}
+
+void GuiMenu::update(int deltatime) {
+	mNetInfo.update(deltatime);
 }
 
 std::vector<HelpPrompt> GuiMenu::getHelpPrompts()

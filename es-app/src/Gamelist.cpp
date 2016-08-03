@@ -195,6 +195,7 @@ void updateGamelist(SystemData* system)
 	}else{
 		//set up an empty gamelist to append to
 		root = doc.append_child("gameList");
+		
 	}
 
 

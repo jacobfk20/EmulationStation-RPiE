@@ -78,7 +78,7 @@ void SystemView::populate()
 		e.data.backgroundExtras = std::shared_ptr<ThemeExtras>(new ThemeExtras(mWindow));
 		e.data.backgroundExtras->setExtras(ThemeData::makeExtras((*it)->getTheme(), "system", mWindow));
 
-		this->add(e);
+		if ((*it)->getSystemEnabled()) this->add(e);
 	}
 }
 
@@ -102,8 +102,11 @@ bool SystemView::input(InputConfig* config, Input input)
 			for(auto it = mEntries.begin(); it != mEntries.end(); it++)
 				it->object->loadTheme();
 
-			populate();
 			updateHelpPrompts();
+			return true;
+		}
+		if (config->isMappedTo("up", input)) {
+			populate();
 			return true;
 		}
 		if(config->isMappedTo("left", input))
@@ -119,7 +122,16 @@ bool SystemView::input(InputConfig* config, Input input)
 		if(config->isMappedTo("a", input))
 		{
 			stopScrolling();
-			ViewController::get()->goToGameList(getSelected());
+			
+			SystemData *systemData = getSelected();
+			
+			// decide whether to show game list or launch the command directly
+			if ( !systemData->getDirectLaunch() )
+			{
+				ViewController::get()->goToGameList(getSelected());
+			}else{
+				systemData->launchGame( mWindow, nullptr );
+			}
 			return true;
 		}
 	}else{
