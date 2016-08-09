@@ -60,7 +60,7 @@ SystemData::SystemData(const std::string& name, const std::string& fullName, con
 	if(!Settings::getInstance()->getBool("ParseGamelistOnly"))
 		populateFolder(mRootFolder);
 
-	if(!Settings::getInstance()->getBool("IgnoreGamelist"))
+	if (!Settings::getInstance()->getBool("IgnoreGamelist") && Settings::getInstance()->getBool("SaveGamelistsOnExit"))
 		parseGamelist(this);
 
 	mRootFolder->sort(FileSorts::SortTypes.at(0));
