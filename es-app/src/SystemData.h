@@ -13,7 +13,7 @@ class SystemData
 public:
 	SystemData(const std::string& name, const std::string& fullName, const std::string& startPath, const std::vector<std::string>& extensions, 
 		const std::string& command, const std::vector<PlatformIds::PlatformId>& platformIds, const std::string& themeFolder, std::string& rawTheme,
-		bool directLaunch=false, bool systemEnabled = true, std::string viewMode = "GRID VIEW", int modSize = 1);
+		bool systemEnabled = true, std::string viewMode = "GRID VIEW", int modSize = 1);
 	~SystemData();
 
 	inline FileData* getRootFolder() const { return mRootFolder; };
@@ -23,7 +23,6 @@ public:
 	inline const std::string& getStartPath() const { return mStartPath; }
 	inline const std::vector<std::string>& getExtensions() const { return mSearchExtensions; }
 	inline const std::string& getThemeFolder() const { return mThemeFolder; }
-	inline const bool getDirectLaunch() const { return mDirectLaunch; }
 	inline const bool getSystemEnabled() const { return mSystemEnabled; }
 	bool setSystemEnabled(bool bEnabled);
 	inline const std::string& getRawTheme() const { return mRawTheme; }
@@ -87,7 +86,6 @@ private:
 	std::string mRawTheme;		// Add this so we can re-save it later.
 	std::string mThemeFolder;
 	std::shared_ptr<ThemeData> mTheme;
-	bool mDirectLaunch;
 	bool mSystemEnabled;
 	std::string mViewMode;		// What view mode this system will render in. 
 	int mGridModSize;

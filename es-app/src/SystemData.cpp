@@ -13,20 +13,13 @@
 #include "Settings.h"
 #include "FileSorts.h"
 
-// -- Update 3/19/2016 - Jacob K. --
-// -- Added systemEnabled flag so systems can easily be hidden in menu.
-// -- Update 6/26/2016 - Jacob K. --
-// -- Added System ViewMode.  Allows user to pick which view mode the system is in.
-// -- Update 7/21/2016 - Jacob K. --
-// -- Added GameGridModSize.
-
 std::vector<SystemData*> SystemData::sSystemVector;
 
 namespace fs = boost::filesystem;
 
 SystemData::SystemData(const std::string& name, const std::string& fullName, const std::string& startPath, const std::vector<std::string>& extensions, 
 	const std::string& command, const std::vector<PlatformIds::PlatformId>& platformIds, const std::string& themeFolder, std::string& rawTheme,
-	bool directLaunch, bool systemEnabled, std::string viewMode, int modSize)
+	bool systemEnabled, std::string viewMode, int modSize)
 {
 	mName = name;
 	mFullName = fullName;
@@ -45,8 +38,6 @@ SystemData::SystemData(const std::string& name, const std::string& fullName, con
 	mThemeFolder = themeFolder;
 
 	mRawTheme = rawTheme;
-
-	mDirectLaunch = directLaunch;
 
 	mSystemEnabled = systemEnabled;
 
@@ -124,12 +115,7 @@ std::string escapePath(const boost::filesystem::path& path)
 
 void SystemData::launchGame(Window* window, FileData* game)
 {
-	if ( game )
-	{
-		LOG(LogInfo) << "Attempting to launch game...";
-	}else{
-		LOG(LogInfo) << "Attempting to launch command...";
-	}
+	LOG(LogInfo) << "Attempting to launch game...";
 
 	AudioManager::getInstance()->deinit();
 	VolumeControl::getInstance()->deinit();
@@ -137,16 +123,13 @@ void SystemData::launchGame(Window* window, FileData* game)
 
 	std::string command = mLaunchCommand;
 
-	if ( game )
-	{
-		const std::string rom = escapePath(game->getPath());
-		const std::string basename = game->getPath().stem().string();
-		const std::string rom_raw = fs::path(game->getPath()).make_preferred().string();
+	const std::string rom = escapePath(game->getPath());
+	const std::string basename = game->getPath().stem().string();
+	const std::string rom_raw = fs::path(game->getPath()).make_preferred().string();
 
-		command = strreplace(command, "%ROM%", rom);
-		command = strreplace(command, "%BASENAME%", basename);
-		command = strreplace(command, "%ROM_RAW%", rom_raw);
-	}
+	command = strreplace(command, "%ROM%", rom);
+	command = strreplace(command, "%BASENAME%", basename);
+	command = strreplace(command, "%ROM_RAW%", rom_raw);
 
 	LOG(LogInfo) << "	" << command;
 	int exitCode = runSystemCommand(command);
@@ -161,26 +144,17 @@ void SystemData::launchGame(Window* window, FileData* game)
 	AudioManager::getInstance()->init();
 	window->normalizeNextUpdate();
 
-	if ( game )
-	{
-		//update number of times the game has been launched
-		int timesPlayed = game->metadata.getInt("playcount") + 1;
-		game->metadata.set("playcount", std::to_string(static_cast<long long>(timesPlayed)));
+	//update number of times the game has been launched
+	int timesPlayed = game->metadata.getInt("playcount") + 1;
+	game->metadata.set("playcount", std::to_string(static_cast<long long>(timesPlayed)));
 
-		//update last played time
-		boost::posix_time::ptime time = boost::posix_time::second_clock::universal_time();
-		game->metadata.setTime("lastplayed", time);
-	}
+	//update last played time
+	boost::posix_time::ptime time = boost::posix_time::second_clock::universal_time();
+	game->metadata.setTime("lastplayed", time);
 }
 
 void SystemData::populateFolder(FileData* folder)
 {
-	if (mDirectLaunch)
-	{
-		LOG(LogInfo) << "System " << mName << " is a direct launch item, not building game lists.";
-		return;
-	}
-
 	const fs::path& folderPath = folder->getPath();
 	if(!fs::is_directory(folderPath))
 	{
@@ -390,7 +364,7 @@ bool SystemData::loadConfig()
 	for(pugi::xml_node system = systemList.child("system"); system; system = system.next_sibling("system"))
 	{
 		std::string name, fullname, path, cmd, themeFolder, viewMode, rawtheme;
-		bool directLaunch, systemEnabled;
+		bool systemEnabled;
 		PlatformIds::PlatformId platformId = PlatformIds::PLATFORM_UNKNOWN;
 		int modsize = 1;
 
@@ -398,7 +372,6 @@ bool SystemData::loadConfig()
 		fullname = system.child("fullname").text().get();
 		path = system.child("path").text().get();
 		rawtheme = system.child("theme").text().get();
-		directLaunch = ( strcmp( system.child("directlaunch").text().get(), "true" ) == 0);
 		if (system.child("enabled").text().get() != "") {
 			systemEnabled = (strcmp(system.child("enabled").text().get(), "true") == 0);			// If this system is disabled, set flag to not show it -jfk
 		}
@@ -448,29 +421,19 @@ bool SystemData::loadConfig()
 		// theme folder
 		themeFolder = system.child("theme").text().as_string(name.c_str());
 
-		//validate game system
-		if( (name.empty() || path.empty() || extensions.empty() || cmd.empty() ) && directLaunch == false )
+		//validate
+		if (name.empty() || path.empty() || extensions.empty() || cmd.empty())
 		{
 			LOG(LogError) << "System \"" << name << "\" is missing name, path, extension, or command!";
 			continue;
 		}
-		
-		//validate direct launch item
-		if( (name.empty() || cmd.empty() ) && directLaunch == true )
-		{
-			LOG(LogError) << "Direct Launch item \"" << name << "\" is missing name or command!";
-			continue;
-		}
 
-		if (!directLaunch)
-		{
-			//convert path to generic directory seperators
-			boost::filesystem::path genericPath(path);
-			path = genericPath.generic_string();
-		}
+		//convert path to generic directory seperators
+		boost::filesystem::path genericPath(path);
+		path = genericPath.generic_string();
 
-		SystemData* newSys = new SystemData(name, fullname, path, extensions, cmd, platformIds, themeFolder, rawtheme, directLaunch, systemEnabled, viewMode, modsize);
-		if(newSys->getRootFolder()->getChildren().size() == 0 && !directLaunch)
+		SystemData* newSys = new SystemData(name, fullname, path, extensions, cmd, platformIds, themeFolder, rawtheme, systemEnabled, viewMode, modsize);
+		if(newSys->getRootFolder()->getChildren().size() == 0)
 		{
 			LOG(LogWarning) << "System \"" << name << "\" has no games! Ignoring it.";
 			delete newSys;
@@ -520,10 +483,6 @@ void SystemData::writeExampleConfig(const std::string& path)
 			"		<!-- The theme to load from the current theme set.  See THEMES.md for more information.\n"
 			"		This tag is optional. If not set, it will default to the value of <name>. -->\n"
 			"		<theme>nes</theme>\n"
-			"\n"
-			"		<!-- Specifies if the item is a direct launch item and won't show it's game list but instead\n"
-			"		will launch the command given. If set to true, every tag except for name and command is optional -->\n"
-			"		<directlaunch>false</directlaunch>\n"
 			"	</system>\n"
 			"</systemList>\n";
 
