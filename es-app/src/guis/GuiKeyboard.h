@@ -8,15 +8,15 @@
 class GuiKeyboard : public GuiComponent
 {
 public:
-	GuiKeyboard(Window* window);
+    GuiKeyboard(Window* window);
 
-	bool input(InputConfig* config, Input input) override;
-	void onSizeChanged() override;
-	std::vector<HelpPrompt> getHelpPrompts() override;
+    bool input(InputConfig* config, Input input) override;
+    void onSizeChanged() override;
+    std::vector<HelpPrompt> getHelpPrompts() override;
 
 private:
-	MenuComponent mMenu;
-	TextComponent mVersion;
+    MenuComponent mMenu;
+    TextComponent mVersion;
 
-	ComponentGrid cGrid;
+    ComponentGrid cGrid;
 };

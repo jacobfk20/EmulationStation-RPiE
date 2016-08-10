@@ -6,7 +6,7 @@
 #include "SystemData.h"
 
 // ===========================================================================
-// Part of this was written by Aloshi but was never finished and added to ES. 
+// Part of this was written by Aloshi but was never finished and added to ES.
 // It would originally load all game art at ES load and could easily eat up
 // All VRAM in smaller systems, such as the raspberry pi.
 // I've added a half-baked way of loading game art into the image grid by doing
@@ -19,159 +19,159 @@
 // ============================================================================
 
 GridGameListView::GridGameListView(Window* window, SystemData* system) : ISimpleGameListView(window, system->getRootFolder()),
-	mGrid(window, system->getGridModSize()), mBackgroundImage(window), mTitle(window)  // mgrid (true) sets to gamegrid
+    mGrid(window, system->getGridModSize()), mBackgroundImage(window), mTitle(window)  // mgrid (true) sets to gamegrid
 {
-	mTitle.setFont(Font::get(FONT_SIZE_MEDIUM));
-	mTitle.setPosition(0, mSize.y() * 0.05f);
-	mTitle.setColor(0xAAAAAAFF);
-	mTitle.setSize(mSize.x(), 0);
-	mTitle.setAlignment(ALIGN_CENTER);
-	addChild(&mTitle);
+    mTitle.setFont(Font::get(FONT_SIZE_MEDIUM));
+    mTitle.setPosition(0, mSize.y() * 0.05f);
+    mTitle.setColor(0xAAAAAAFF);
+    mTitle.setSize(mSize.x(), 0);
+    mTitle.setAlignment(ALIGN_CENTER);
+    addChild(&mTitle);
 
-	mGrid.setPosition(0, mSize.y() * 0.15f);
-	mGrid.setSize(mSize.x(), mSize.y() * 0.8f);
-	addChild(&mGrid);
+    mGrid.setPosition(0, mSize.y() * 0.15f);
+    mGrid.setSize(mSize.x(), mSize.y() * 0.8f);
+    addChild(&mGrid);
 
-	mSystem = system;
+    mSystem = system;
 
-	// Load in just the first game to keep ES from crashing if ReloadAll() is called.
-	InitGrid(system->getRootFolder()->getChildren());
+    // Load in just the first game to keep ES from crashing if ReloadAll() is called.
+    InitGrid(system->getRootFolder()->getChildren());
 }
 
 FileData* GridGameListView::getCursor()
 {
-	return mGrid.getSelected();
+    return mGrid.getSelected();
 }
 
 void GridGameListView::setCursor(FileData* file)
 {
-	if(!mGrid.setCursor(file) && mGrid.getEntryCount() > 0)
-	{
-		populateList(file->getParent()->getChildren());
-		mGrid.setCursor(file);
-		mTitle.setText(file->getName());
-	}
+    if(!mGrid.setCursor(file) && mGrid.getEntryCount() > 0) {
+        populateList(file->getParent()->getChildren());
+        mGrid.setCursor(file);
+        mTitle.setText(file->getName());
+    }
 }
 
 bool GridGameListView::input(InputConfig* config, Input input)
 {
-	if (config->isMappedTo("left", input) || config->isMappedTo("right", input) || config->isMappedTo("up", input) || config->isMappedTo("down", input)) {
-		// Quick and dirty way of changing header title without doing in update()
-		mTitle.setText(mGrid.getSelectedName());
+    if (config->isMappedTo("left", input) || config->isMappedTo("right", input) || config->isMappedTo("up", input) || config->isMappedTo("down", input)) {
+        // Quick and dirty way of changing header title without doing in update()
+        mTitle.setText(mGrid.getSelectedName());
 
-		// Destroy dpad input so mGrid can use it.
-		return GuiComponent::input(config, input);
-	}
+        // Destroy dpad input so mGrid can use it.
+        return GuiComponent::input(config, input);
+    }
 
 
-	// Lefttop and righttop bumper controls in ISimpleGameListView.
+    // Lefttop and righttop bumper controls in ISimpleGameListView.
 
-	return ISimpleGameListView::input(config, input);
+    return ISimpleGameListView::input(config, input);
 }
 
-void GridGameListView::update(int deltatime) {
-	// For Loading in game data as the user clicks on the system. 
-	// Loads one game per frame, or if specified to load on frame x.
-	if (mReloading && mLoadFrame >= mLoadFrameKey){
-		mLoadFrame = 0;
-		if (mNextLoad < mSystem->getGameCount()) {
-			auto file = mSystem->getRootFolder()->getChildren();
-			auto it = file.at(mNextLoad);
-		
-			mGrid.add(it->getName(), it->getThumbnailPath(), it);
-			mNextLoad++;
-		}
-		else {
-			mReloading = false;
-			mNeedsRefresh = false;
-			mNextLoad = 0;
-		}
-	}
+void GridGameListView::update(int deltatime)
+{
+    // For Loading in game data as the user clicks on the system.
+    // Loads one game per frame, or if specified to load on frame x.
+    if (mReloading && mLoadFrame >= mLoadFrameKey) {
+        mLoadFrame = 0;
+        if (mNextLoad < mSystem->getGameCount()) {
+            auto file = mSystem->getRootFolder()->getChildren();
+            auto it = file.at(mNextLoad);
 
-	mLoadFrame++;
+            mGrid.add(it->getName(), it->getThumbnailPath(), it);
+            mNextLoad++;
+        } else {
+            mReloading = false;
+            mNeedsRefresh = false;
+            mNextLoad = 0;
+        }
+    }
+
+    mLoadFrame++;
 }
 
 void GridGameListView::populateList(const std::vector<FileData*>& files)
 {
-	// Sets the bool to load in games in update()
-	if (mNeedsRefresh) {
-		mReloading = true;
+    // Sets the bool to load in games in update()
+    if (mNeedsRefresh) {
+        mReloading = true;
 
-		// If grid has some games still in it, continue after them
-		if (mGrid.getEntryCount() > 0) mNextLoad = mGrid.getEntryCount();
+        // If grid has some games still in it, continue after them
+        if (mGrid.getEntryCount() > 0) {
+            mNextLoad = mGrid.getEntryCount();
+        }
 
-		mHeaderText.setColor(0xFFFFFFFF);
-	}
+        mHeaderText.setColor(0xFFFFFFFF);
+    }
 }
 
-void GridGameListView::InitGrid(const std::vector<FileData*>& files) {
-	auto it = files.at(0);
-	mGrid.add(it->getName(), it->getThumbnailPath(), it);
+void GridGameListView::InitGrid(const std::vector<FileData*>& files)
+{
+    auto it = files.at(0);
+    mGrid.add(it->getName(), it->getThumbnailPath(), it);
 
 }
 
 void GridGameListView::launch(FileData* game)
 {
-	ViewController::get()->launch(game);
+    ViewController::get()->launch(game);
 }
 
 void GridGameListView::remove(FileData *game)
 {
-	boost::filesystem::remove(game->getPath());  // actually delete the file on the filesystem
-	if (getCursor() == game)                     // Select next element in list, or prev if none
-	{
-		std::vector<FileData*> siblings = game->getParent()->getChildren();
-		auto gameIter = std::find(siblings.begin(), siblings.end(), game);
-		auto gamePos = std::distance(siblings.begin(), gameIter);
-		if (gameIter != siblings.end())
-		{
-			if ((gamePos + 1) < siblings.size())
-			{
-				setCursor(siblings.at(gamePos + 1));
-			}
-			else if ((gamePos - 1) > 0) {
-				setCursor(siblings.at(gamePos - 1));
-			}
-		}
-	}
-	delete game;                                 // remove before repopulating (removes from parent)
-	onFileChanged(game, FILE_REMOVED);           // update the view, with game removed
+    boost::filesystem::remove(game->getPath());  // actually delete the file on the filesystem
+    if (getCursor() == game) {                   // Select next element in list, or prev if none
+        std::vector<FileData*> siblings = game->getParent()->getChildren();
+        auto gameIter = std::find(siblings.begin(), siblings.end(), game);
+        auto gamePos = std::distance(siblings.begin(), gameIter);
+        if (gameIter != siblings.end()) {
+            if ((gamePos + 1) < siblings.size()) {
+                setCursor(siblings.at(gamePos + 1));
+            } else if ((gamePos - 1) > 0) {
+                setCursor(siblings.at(gamePos - 1));
+            }
+        }
+    }
+    delete game;                                 // remove before repopulating (removes from parent)
+    onFileChanged(game, FILE_REMOVED);           // update the view, with game removed
 }
 
 void GridGameListView::onThemeChanged(const std::shared_ptr<ThemeData>& theme)
 {
-	ISimpleGameListView::onThemeChanged(theme);
+    ISimpleGameListView::onThemeChanged(theme);
 
-	using namespace ThemeFlags;
-	// Add custom theme stuff below here.
+    using namespace ThemeFlags;
+    // Add custom theme stuff below here.
 
-	mTitle.applyTheme(theme, getName(), "md_title", ALL ^ (POSITION | ThemeFlags::SIZE | TEXT));
-	mGrid.applyTheme(theme, getName(), "md_grid", ALL ^ (POSITION | ThemeFlags::SIZE | ALIGNMENT | POSITION | ORIGIN));
+    mTitle.applyTheme(theme, getName(), "md_title", ALL ^ (POSITION | ThemeFlags::SIZE | TEXT));
+    mGrid.applyTheme(theme, getName(), "md_grid", ALL ^ (POSITION | ThemeFlags::SIZE | ALIGNMENT | POSITION | ORIGIN));
 
 }
 
 
-void GridGameListView::onFocusGained() {
-	populateList(mSystem->getRootFolder()->getChildren());
-	
+void GridGameListView::onFocusGained()
+{
+    populateList(mSystem->getRootFolder()->getChildren());
+
 }
 
-void GridGameListView::onFocusLost() {
-	while (mGrid.getEntryCount() > mImageCacheAmount) {
-		mGrid.remove();
-	}
-	mNeedsRefresh = true;
+void GridGameListView::onFocusLost()
+{
+    while (mGrid.getEntryCount() > mImageCacheAmount) {
+        mGrid.remove();
+    }
+    mNeedsRefresh = true;
 }
 
 
 std::vector<HelpPrompt> GridGameListView::getHelpPrompts()
 {
-	std::vector<HelpPrompt> prompts;
-	prompts.push_back(HelpPrompt("up/down/left/right", "scroll"));
-	prompts.push_back(HelpPrompt("l", "change system"));
-	prompts.push_back(HelpPrompt("r", "change system"));
-	prompts.push_back(HelpPrompt("a", "launch"));
-	prompts.push_back(HelpPrompt("b", "back"));
-	prompts.push_back(HelpPrompt("select", "Settings"));
-	return prompts;
+    std::vector<HelpPrompt> prompts;
+    prompts.push_back(HelpPrompt("up/down/left/right", "scroll"));
+    prompts.push_back(HelpPrompt("l", "change system"));
+    prompts.push_back(HelpPrompt("r", "change system"));
+    prompts.push_back(HelpPrompt("a", "launch"));
+    prompts.push_back(HelpPrompt("b", "back"));
+    prompts.push_back(HelpPrompt("select", "Settings"));
+    return prompts;
 }
