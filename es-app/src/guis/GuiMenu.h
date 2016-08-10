@@ -8,18 +8,18 @@
 class GuiMenu : public GuiComponent
 {
 public:
-	GuiMenu(Window* window);
+    GuiMenu(Window* window);
 
-	bool input(InputConfig* config, Input input) override;
-	void update(int deltatime) override;
-	void onSizeChanged() override;
-	std::vector<HelpPrompt> getHelpPrompts() override;
+    bool input(InputConfig* config, Input input) override;
+    void update(int deltatime) override;
+    void onSizeChanged() override;
+    std::vector<HelpPrompt> getHelpPrompts() override;
 
 private:
-	void addEntry(const char* name, unsigned int color, bool add_arrow, const std::function<void()>& func);
+    void addEntry(const char* name, unsigned int color, bool add_arrow, const std::function<void()>& func);
 
-	MenuComponent mMenu;
-	TextComponent mVersion;
+    MenuComponent mMenu;
+    TextComponent mVersion;
 
-	NetworkInfoComponent mNetInfo;
+    NetworkInfoComponent mNetInfo;
 };

@@ -7,19 +7,19 @@
 class GuiWifiConnect : public GuiComponent
 {
 public:
-	GuiWifiConnect(Window* window, std::string wifiName, bool encrypted);
+    GuiWifiConnect(Window* window, std::string wifiName, bool encrypted);
 
-	bool input(InputConfig* config, Input input) override;
-	void onSizeChanged() override;
-	std::vector<HelpPrompt> getHelpPrompts() override;
+    bool input(InputConfig* config, Input input) override;
+    void onSizeChanged() override;
+    std::vector<HelpPrompt> getHelpPrompts() override;
 
 private:
-	void addEntry(const char* name, unsigned int color, bool add_arrow, const std::function<void()>& func);
+    void addEntry(const char* name, unsigned int color, bool add_arrow, const std::function<void()>& func);
 
-	MenuComponent mMenu;
-	TextComponent mVersion;
+    MenuComponent mMenu;
+    TextComponent mVersion;
 
-	bool mConnected = false;
+    bool mConnected = false;
 
-	const char* mPassword;
+    const char* mPassword;
 };

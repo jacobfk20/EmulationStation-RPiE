@@ -11,28 +11,28 @@
 class GuiSetupController : public GuiComponent
 {
 public:
-	GuiSetupController(Window* window, const std::function<void()>& doneCallback);
-									  
-	bool input(InputConfig* config, Input input) override;
-	void update(int deltatime) override;
-	void onSizeChanged() override;
-	std::vector<HelpPrompt> getHelpPrompts() override;
+    GuiSetupController(Window* window, const std::function<void()>& doneCallback);
+
+    bool input(InputConfig* config, Input input) override;
+    void update(int deltatime) override;
+    void onSizeChanged() override;
+    std::vector<HelpPrompt> getHelpPrompts() override;
 
 private:
-	bool loadFile();
-	int getControllerCount();
-	void buildControllerGrid();
-	void createSampleFile();
+    bool loadFile();
+    int getControllerCount();
+    void buildControllerGrid();
+    void createSampleFile();
 
-	ComponentGrid mGrid;
+    ComponentGrid mGrid;
 
-	MenuComponent mMenu;
+    MenuComponent mMenu;
 
-	TextComponent mVersion;
+    TextComponent mVersion;
 
-	std::function<void()> mDoneCallback;
+    std::function<void()> mDoneCallback;
 
-	std::vector<std::vector<std::string>> vDocData;
-	int mControllerCount = 0;
-	bool mFileLoaded = false;
+    std::vector<std::vector<std::string>> vDocData;
+    int mControllerCount = 0;
+    bool mFileLoaded = false;
 };
