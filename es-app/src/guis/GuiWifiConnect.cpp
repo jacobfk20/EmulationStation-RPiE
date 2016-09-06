@@ -129,16 +129,16 @@ GuiWifiConnect::GuiWifiConnect(Window* window, std::string wifiName, bool encryp
 		}
 		mWindow->pushGui(new GuiMsgBox(mWindow, "Network: " + wifiName + "\n Password: " + ed->getValue(), "Connect", [this, wifiName, ed] {
 			// Quick and dirty just send the info to wificonnect
-			std::string cmdStr = "sudo /app/wifi/./wificonnect --ssid '" + wifiName + "' --password " + ed->getValue();
+			std::string cmdStr = "sudo " + getHomePath() + "/.emulationstation/app/wifi/./wificonnect --ssid '" + wifiName + "' --password " + ed->getValue();
 			const char* cmd = cmdStr.c_str();
 
 			// Make sure wificonnect exists
-			std::string path = getHomePath() + "/.emulationstation/app/wificonnect";
+			std::string path = getHomePath() + "/.emulationstation/app/wifi/wificonnect";
 			if (boost::filesystem::exists(path)) {
 				system(cmd);
 				mConnected = true;
 			} else {
-				mWindow->pushGui(new GuiMsgBox(mWindow, "wificonnect is missing.  This is used to send wifi info to wpa_supplicant.  This should be in ~/.emulationstation/app", "OK", nullptr));
+				mWindow->pushGui(new GuiMsgBox(mWindow, "wificonnect is missing.  This is used to send wifi info to wpa_supplicant.  This should be in ~/.emulationstation/app/wifi", "OK", nullptr));
 				LOG(LogError) << "WifiConnect: Couldn't find wificonnect in " << path << " folder";
 			}
 
