@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 #include "string.h"
 
 // variables
@@ -42,6 +43,10 @@ int main(int argc, const char *argv[]){
 		wpaFile << "# END SETUP";
 
 		wpaFile.close();
+
+		// Force wlan0 reset
+		system("sudo ifup --force wlan0");
+
 		return 1;
 	}
 	else{
