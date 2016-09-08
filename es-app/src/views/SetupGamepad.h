@@ -13,25 +13,25 @@ class GuiComponent;
 class SetupGamepad : public GuiComponent
 {
 public:
-    SetupGamepad(Window* window);
+	SetupGamepad(Window* window);
 
-    bool input(InputConfig* config, Input input) override;
-    void update(int deltaTime) override;
-    void render(const Eigen::Affine3f& parentTrans) override;
+	bool input(InputConfig* config, Input input) override;
+	void update(int deltaTime) override;
+	void render(const Eigen::Affine3f& parentTrans) override;
 
-    std::vector<HelpPrompt> getHelpPrompts() override;
-    //virtual HelpStyle getHelpStyle() override;
+	std::vector<HelpPrompt> getHelpPrompts() override;
+	//virtual HelpStyle getHelpStyle() override;
 
 //protected:
-    //void onCursorChanged(const CursorState& state) override;
+	//void onCursorChanged(const CursorState& state) override;
 
 private:
-    void populate();
+	void populate();
 
-    TextComponent mSystemInfo;
+	TextComponent mSystemInfo;
 
-    // unit is list index
-    float mCamOffset;
-    float mExtrasCamOffset;
-    float mExtrasFadeOpacity;
+	// unit is list index
+	float mCamOffset;
+	float mExtrasCamOffset;
+	float mExtrasFadeOpacity;
 };
