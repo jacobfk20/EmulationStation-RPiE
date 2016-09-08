@@ -15,33 +15,33 @@ class InfoStripComponent;
 class InfoStripComponent : public GuiComponent
 {
 public:
-    InfoStripComponent(Window* window, const std::shared_ptr<Font>& sharedFont = Font::get(FONT_SIZE_SMALL));
+	InfoStripComponent(Window* window, const std::shared_ptr<Font>& sharedFont = Font::get(FONT_SIZE_SMALL));
 
-    void onSizeChanged() override;
+	void onSizeChanged() override;
 
-    // void addRow(const ComponentListRow& row, bool setCursorHere = false) { mList->addRow(row, setCursorHere); updateSize(); }
+	// void addRow(const ComponentListRow& row, bool setCursorHere = false) { mList->addRow(row, setCursorHere); updateSize(); }
 
-    void update(int deltatime) override;
+	void update(int deltatime) override;
 
 
 private:
-    void updateSize();
-    //void updateGrid();
-    float getButtonGridHeight() const;
+	void updateSize();
+	//void updateGrid();
+	float getButtonGridHeight() const;
 
-    NinePatchComponent mBackground;
-    //ComponentList mList;
-    ComponentGrid mGrid;
+	NinePatchComponent mBackground;
+	//ComponentList mList;
+	ComponentGrid mGrid;
 
-    std::shared_ptr<ComponentList> mList;
+	std::shared_ptr<ComponentList> mList;
 
-    // temoporarily make some fake objects
-    int mFrameCount = 0;
-    int mDCount = 0;
-    // wifi info obj:
-    ImageComponent mWifiImg;
-    bool mWifiState;
-    // Lan Info obj:
-    ImageComponent mLanImg;
-    bool mLanState;
+	// temoporarily make some fake objects
+	int mFrameCount = 0;
+	int mDCount = 0;
+	// wifi info obj:
+	ImageComponent mWifiImg;
+	bool mWifiState;
+	// Lan Info obj:
+	ImageComponent mLanImg;
+	bool mLanState;
 };

@@ -10,61 +10,55 @@ class TextCache;
 class TextEditComponent : public GuiComponent
 {
 public:
-    TextEditComponent(Window* window);
+	TextEditComponent(Window* window);
+	
+	void textInput(const char* text) override;
+	bool input(InputConfig* config, Input input) override;
+	void update(int deltaTime) override;
+	void render(const Eigen::Affine3f& parentTrans) override;
 
-    void textInput(const char* text) override;
-    bool input(InputConfig* config, Input input) override;
-    void update(int deltaTime) override;
-    void render(const Eigen::Affine3f& parentTrans) override;
+	void onFocusGained() override;
+	void onFocusLost() override;
 
-    void onFocusGained() override;
-    void onFocusLost() override;
+	void onSizeChanged() override;
 
-    void onSizeChanged() override;
+	void setValue(const std::string& val) override;
+	std::string getValue() const override;
 
-    void setValue(const std::string& val) override;
-    std::string getValue() const override;
+	inline bool isEditing() const { return mEditing; };
+	inline const std::shared_ptr<Font>& getFont() const { return mFont; }
 
-    inline bool isEditing() const
-    {
-        return mEditing;
-    };
-    inline const std::shared_ptr<Font>& getFont() const
-    {
-        return mFont;
-    }
+	void setCursor(size_t pos);
 
-    void setCursor(size_t pos);
+	virtual std::vector<HelpPrompt> getHelpPrompts() override;
 
-    virtual std::vector<HelpPrompt> getHelpPrompts() override;
-
-    void startEditing();
-    void stopEditing();
+	void startEditing();
+	void stopEditing();
 
 private:
 
-    void onTextChanged();
-    void onCursorChanged();
+	void onTextChanged();
+	void onCursorChanged();
 
-    void updateCursorRepeat(int deltaTime);
-    void moveCursor(int amt);
+	void updateCursorRepeat(int deltaTime);
+	void moveCursor(int amt);
 
-    bool isMultiline();
-    Eigen::Vector2f getTextAreaPos() const;
-    Eigen::Vector2f getTextAreaSize() const;
+	bool isMultiline();
+	Eigen::Vector2f getTextAreaPos() const;
+	Eigen::Vector2f getTextAreaSize() const;
 
-    std::string mText;
-    bool mFocused;
-    bool mEditing;
-    int mCursor; // cursor position in characters
+	std::string mText;
+	bool mFocused;
+	bool mEditing;
+	int mCursor; // cursor position in characters
 
-    int mCursorRepeatTimer;
-    int mCursorRepeatDir;
+	int mCursorRepeatTimer;
+	int mCursorRepeatDir;
 
-    Eigen::Vector2f mScrollOffset;
+	Eigen::Vector2f mScrollOffset;
 
-    NinePatchComponent mBox;
+	NinePatchComponent mBox;
 
-    std::shared_ptr<Font> mFont;
-    std::unique_ptr<TextCache> mTextCache;
+	std::shared_ptr<Font> mFont;
+	std::unique_ptr<TextCache> mTextCache;
 };
